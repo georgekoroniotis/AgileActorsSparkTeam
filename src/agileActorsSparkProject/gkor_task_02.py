@@ -84,3 +84,43 @@ parts_df.write.mode("overwrite").parquet(orderItems_output_path+r'\parts')
 
 # write the initial json file to parquet file
 orderItems_df.write.mode("overwrite").parquet(orderItems_output_path+r'\orderItemsJSON')
+
+# After tasks 1 and 3 you will have the same dataset in json , 
+# parquet nested and parquet simple files . Now we will run 
+# queries over each different file format. We want to run the 
+# same queries but with the syntax adjusted to the nested or flat file formats.
+
+# Please select any query from here (eg query 10) and adapt it to run for nested and flat files. 
+# Ideally it should run over the 3NF parquet files as is. 
+# If some entity in a query is missing in our data just ignore it and remove it from the query. 
+# Make sure you run the query as both SQL and PySpark api.
+
+# Run QUERY 1 using flat file using SQL API
+lineItems_df.createOrReplaceTempView('lineitem')
+
+query_01 = spark.sql(""" select
+        l_returnflag,
+        l_linestatus,
+        sum(l_quantity) as sum_qty,
+        sum(l_extendedprice) as sum_base_price,
+        sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+        sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+        avg(l_quantity) as avg_qty,
+        avg(l_extendedprice) as avg_price,
+        avg(l_discount) as avg_disc,
+        count(*) as count_order
+    from
+        lineitem
+    where
+        l_shipdate <= '1998-09-16'
+    group by
+        l_returnflag,
+        l_linestatus
+    order by
+        l_returnflag,
+        l_linestatus;
+    """)
+query_01.show()    
+
+
+
