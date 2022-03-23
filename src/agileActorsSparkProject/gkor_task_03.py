@@ -2,7 +2,7 @@ from numpy import double
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-from pyspark.sql import functions as f
+from pyspark.sql import functions as F
 
 spark=SparkSession\
         .builder\
@@ -28,10 +28,11 @@ parts_df = spark.read.parquet(input_path+'parts')
 # If some entity in a query is missing in our data just ignore it and remove it from the query. 
 # Make sure you run the query as both SQL and PySpark api.
 
-# Run QUERY 1 using flat file using SQL API
+# Run QUERY 1 using SQL API
 lineItems_df.createOrReplaceTempView('lineitem')
 
-query_01 = spark.sql(""" select
+print("Run QUERY 1 using flat file using SQL API")
+spark.sql(""" select
         l_returnflag,
         l_linestatus,
         sum(l_quantity) as sum_qty,
@@ -52,22 +53,24 @@ query_01 = spark.sql(""" select
     order by
         l_returnflag,
         l_linestatus;
-    """)
-query_01.show()    
+    """)#.show()
 
-# Run QUERY 1 using flat file using PySpark Api
+   
 
+# Run QUERY 1 using PySpark Api
+print("Run QUERY 1 using flat file using pyspark API")
 lineItems_df.filter(lineItems_df['l_shipdate'] <= '1998-09-16')\
                 .groupBy('l_returnflag','l_linestatus')\
-                    .agg((sum("l_quantity").alias("sum_qty"),\
-                          sum("l_extendedprice").alias("sum_base_price"),\
-                          sum("l_extendedprice" * (1 - "l_discount")).alias("sum_disc_price"),\
-                          sum("l_extendedprice" * (1 - "l_discount") * (1 + "l_tax")).alias("sum_charge"),\
-                          avg("l_quantity").alias('avg_qty'),\
-                          avg("l_extendedprice").alias('avg_price'),\
-                          avg("l_discount").alias("avg_disc"),
-                          count("*").alias("count_order")\    
-                        ))).show()
+                    .agg(
+                        F.sum("l_quantity").alias("sum_qty"),
+                        F.sum("l_extendedprice").alias("sum_base_price"),
+                        F.sum(F.col("l_extendedprice") * (1 - F.col("l_discount"))).alias("sum_disc_price"),\
+                        F.sum(F.col("l_extendedprice") * (1 - F.col("l_discount")) * (1 + F.col("l_tax"))).alias("sum_charge"),\
+                        F.avg("l_quantity").alias('avg_qty'),\
+                        F.avg("l_extendedprice").alias('avg_price'),\
+                        F.avg("l_discount").alias("avg_disc"),\
+                        F.count("*").alias("count_order")    
+                        ).orderBy("l_returnflag","l_linestatus")#.show()
 
 
 
